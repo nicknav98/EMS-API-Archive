@@ -1,0 +1,44 @@
+version: '3'
+networks:
+  testNetwork:
+    driver: bridge
+
+
+services:
+  docker-host:
+    image: qoomon/docker-host
+    cap_add: [ 'NET_ADMIN', 'NET_RAW' ]
+    restart: on-failure
+
+  tcp_message_emitter:
+    depends_on: [ docker-host ]
+    image: alpine
+    command: [ "sh", "-c", "while :; do date; sleep 1; done | nc 'docker-host' 2323 -v" ]
+  udp_message_emitter:
+    depends_on: [ docker-host ]
+    image: alpine
+    command: [ "sh", "-c", "while :; do date; sleep 1; done | nc 'docker-host' 5353 -u -v" ]
+
+  EMS_DB:
+    image: bitnami/postgresql:14
+    ports:
+      - '5432:5432'
+    environment:
+      - POSTGRESQL_PASSWORD=password
+      - POSTGRESQL_USER=admin
+      - POSTGRESQL_DATABASE=EMS-DB
+    networks:
+      - testNetwork
+
+  pgAdmin:
+    image: dpage/pgadmin4
+    depends_on:
+      - EMS_DB
+    restart: always
+    ports:
+      - '5555:80'
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=user@domain.com
+      - PGADMIN_DEFAULT_PASSWORD=password
+    networks:
+      - testNetwork

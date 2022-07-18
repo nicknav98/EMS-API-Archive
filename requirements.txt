@@ -1,0 +1,5 @@
+httpie
+fastapi
+uvicorn
+sqlalchemy
+sqlalchemy.orm

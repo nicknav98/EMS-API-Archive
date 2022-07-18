@@ -1,3 +1,9 @@
 #Ignore virtual environment 
 venv/
 .idea/
+env/
+#ignore database connection url (SECURITY - Ask Lead for more info)
+database.py
+.python-version
+__pycache__/
+
