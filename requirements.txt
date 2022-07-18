@@ -2,4 +2,8 @@ httpie
 fastapi
 uvicorn
 sqlalchemy
-sqlalchemy.orm
+pydantic
+passlib[bcrypt]
+python-jose[cryptography]
+
+
