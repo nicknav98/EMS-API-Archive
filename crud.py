@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 
-from . import models, schemas
+import models
+import schemas
 
 
 def get_user(db: Session, user_id: int):
@@ -14,15 +15,18 @@ def get_user_by_email(db: Session, email: str):
 def get_users(db: Session):
     return db.query(models.User).all()
 
+
 def create_user(db: Session, user: schemas.UserCreate):
-    hashed_password = get_hashed_password(user.password)
-    db_user = models.User(username=user.username, email=user.email, hashed_password=hashed_password)
+    fake_hashed_password = user.hashed_password + "=="
+    db_user = models.User(email=user.email, hashed_password=fake_hashed_password)
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
     return db_user
 
-# ------------END OF User Functions----------------------------------------------------------------------------------------------------
+
+# ------------END OF User
+# Functions----------------------------------------------------------------------------------------------------
 
 
 def get_building(db: Session, building_id: int):
@@ -37,21 +41,43 @@ def get_building_by_user(db: Session, user_id: int):
     return db.query(models.Building).filter(models.Building.user_id == user_id).first()
 
 
-def get_buildings(db: Session):
-    return db.query(models.Building).all()
+def get_buildings(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.Building).offset(skip).limit(limit).all()
 
-# ------------END OF Building Functions----------------------------------------------------------------------------------------------------
+
+def create_user_building(db: Session, user_id: int, building: schemas.BuildingCreate):
+    db_building = models.Building(name=building.name, location=building.location,
+                                  is_pv_installed=building.is_pv_installed, user_id=user_id)
+    db.add(db_building)
+    db.commit()
+    db.refresh(db_building)
+    return db_building
+
+
+# ------------END OF Building
+# Functions----------------------------------------------------------------------------------------------------
 
 
 def get_measurement_by_starttime(db: Session, starttime: str):
     return db.query(models.Measurement).filter(models.Measurement.starttime == starttime).first()
 
+
 def get_measurement_by_building(db: Session, building_name: str):
     return db.query(models.Measurement).filter(models.Measurement.building_name == building_name).all()
 
-def get_measurements(db: Session):
-    return db.query(models.Measurement).all()
 
-# ------------END OF Measurement Functions----------------------------------------------------------------------------------------------------
+def get_measurements(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.Measurement).offset(skip).limit(limit).all()
 
 
+def create_measurement(db: Session, measurement: schemas.MeasurementCreate):
+    db_measurement = models.Measurement(starttime=measurement.starttime, endtime=measurement.endtime,
+                                        energy=measurement.energy, unit=measurement.unit,
+                                        building_name=measurement.building_name)
+    db.add(db_measurement)
+    db.commit()
+    db.refresh(db_measurement)
+    return db_measurement
+
+# ------------END OF Measurement
+# Functions----------------------------------------------------------------------------------------------------
