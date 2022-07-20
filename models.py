@@ -4,16 +4,16 @@ from sqlalchemy.orm import relationship, Session
 from database import Base
 
 
-class User(Base):
-    __tablename__ = 'users'
+# class User(Base):
+#    __tablename__ = 'users'
 
-    id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True)
-    email = Column(String(120), unique=True, index=True)
-    hashed_password = Column(String(128))
-    is_active = Column(Boolean, default=True)
+# id = Column(Integer, primary_key=True, index=True)
+# username = Column(String, unique=True, index=True)
+# email = Column(String(120), unique=True, index=True)
+# password = Column(String(128))
+# is_active = Column(Boolean, default=True)
 
-    buildings = relationship("Building", back_populates="owner")
+# buildings = relationship("Building", back_populates="owner")
 
 
 class Building(Base):
@@ -38,3 +38,27 @@ class Measurement(Base):
     unit = Column(String(2))
     building_name = Column(String, ForeignKey('buildings.name'), nullable=False)
     building = relationship("Building", back_populates="measurements", lazy=True)
+
+
+class User(Base):
+    __tablename__ = 'users'
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String(120), unique=True, index=True)
+    username = Column(String(120), unique=True, index=True)
+    password = Column(String(128))
+    is_active = Column(Boolean, default=True)
+    access_token = Column(String(128)), ForeignKey('access_tokens.token')
+
+    buildings = relationship("Building", back_populates="owner")
+
+
+class AccessToken(Base):
+    __tablename__ = 'access_tokens'
+    id = Column(Integer, primary_key=True, index=True)
+    token = Column(String(120), unique=True, index=True)
+    username = Column(String(120), ForeignKey('users.username'))
+    expires_in = Column(Integer)
+
+    user = relationship("User", backref="access_token")
+
+

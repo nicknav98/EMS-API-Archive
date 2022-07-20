@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 
 import models
 import schemas
+import password
 
 
 def get_user(db: Session, user_id: int):
@@ -12,13 +13,12 @@ def get_user_by_email(db: Session, email: str):
     return db.query(models.User).filter(models.User.email == email).first()
 
 
-def get_users(db: Session):
-    return db.query(models.User).all()
+def get_users(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.User).offset(skip).limit(limit).all()
 
 
-def create_user(db: Session, user: schemas.UserCreate):
-    fake_hashed_password = user.hashed_password + "=="
-    db_user = models.User(email=user.email, hashed_password=fake_hashed_password)
+def create_user(db: Session, user: schemas.UserCreate, password_hashed: schemas.UserDB):
+    db_user = models.User(email=user.email, password=password_hashed)
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
@@ -79,5 +79,13 @@ def create_measurement(db: Session, measurement: schemas.MeasurementCreate):
     db.refresh(db_measurement)
     return db_measurement
 
+
 # ------------END OF Measurement
 # Functions----------------------------------------------------------------------------------------------------
+
+def create_access_token(db: Session, user_id: int, expires: float = 3600):
+    access_token = models.AccessToken(user_id=user_id)
+    db.add(access_token)
+    db.commit()
+    db.refresh(access_token)
+    return access_token

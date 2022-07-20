@@ -6,4 +6,6 @@ pydantic
 passlib[bcrypt]
 python-jose[cryptography]
 psycopg2
+python-multipart
+tortoise
 

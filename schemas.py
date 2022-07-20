@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 from pydantic import BaseModel
 
 
@@ -8,6 +8,7 @@ class MeasurementBase(BaseModel):
     energy: int
     unit: str
     building_name: str
+
     class Config:
         orm_mode = True
 
@@ -17,7 +18,6 @@ class MeasurementCreate(MeasurementBase):
 
 
 class Measurement(MeasurementBase):
-
     class Config:
         orm_mode = True
 
@@ -50,7 +50,7 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
-    hashed_password: str
+    password: str
 
 
 class User(UserBase):
@@ -58,6 +58,40 @@ class User(UserBase):
     is_active: bool
 
     buildings: List[BuildingBase]
+
+    class Config:
+        orm_mode = True
+
+
+class UserDB(User):
+    hashed_password: str
+
+    class Config:
+        orm_mode = True
+
+
+class AccessTokenBase(BaseModel):
+    access_token: str
+    expires_in: int
+
+    class Config:
+        orm_mode = True
+
+
+class TokenCreate(AccessTokenBase):
+    pass
+
+
+class TokenData(AccessTokenBase):
+    username: Union[str, None]
+
+
+    class Config:
+        orm_mode = True
+
+
+class Token(AccessTokenBase):
+    user_id: int
 
     class Config:
         orm_mode = True
