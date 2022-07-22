@@ -42,3 +42,13 @@ services:
       - PGADMIN_DEFAULT_PASSWORD=password
     networks:
       - testNetwork
+
+  ems-api:
+    image: nicknav98/ems-api
+    depends_on:
+      - EMS_DB
+    restart: always
+    ports:
+      - '8000:8000'
+    networks:
+      - testNetwork
