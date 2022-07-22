@@ -50,6 +50,7 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
+    username: str
     password: str
 
 
@@ -70,28 +71,16 @@ class UserDB(User):
         orm_mode = True
 
 
-class AccessTokenBase(BaseModel):
-    access_token: str
-    expires_in: int
+class Token(BaseModel):
+    token: str
+    token_type: str
 
     class Config:
         orm_mode = True
 
 
-class TokenCreate(AccessTokenBase):
-    pass
-
-
-class TokenData(AccessTokenBase):
+class TokenData(BaseModel):
     username: Union[str, None]
-
-
-    class Config:
-        orm_mode = True
-
-
-class Token(AccessTokenBase):
-    user_id: int
 
     class Config:
         orm_mode = True

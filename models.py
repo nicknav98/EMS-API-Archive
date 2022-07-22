@@ -4,18 +4,6 @@ from sqlalchemy.orm import relationship, Session
 from database import Base
 
 
-# class User(Base):
-#    __tablename__ = 'users'
-
-# id = Column(Integer, primary_key=True, index=True)
-# username = Column(String, unique=True, index=True)
-# email = Column(String(120), unique=True, index=True)
-# password = Column(String(128))
-# is_active = Column(Boolean, default=True)
-
-# buildings = relationship("Building", back_populates="owner")
-
-
 class Building(Base):
     __tablename__ = 'buildings'
 
@@ -47,18 +35,8 @@ class User(Base):
     username = Column(String(120), unique=True, index=True)
     password = Column(String(128))
     is_active = Column(Boolean, default=True)
-    access_token = Column(String(128)), ForeignKey('access_tokens.token')
 
     buildings = relationship("Building", back_populates="owner")
 
-
-class AccessToken(Base):
-    __tablename__ = 'access_tokens'
-    id = Column(Integer, primary_key=True, index=True)
-    token = Column(String(120), unique=True, index=True)
-    username = Column(String(120), ForeignKey('users.username'))
-    expires_in = Column(Integer)
-
-    user = relationship("User", backref="access_token")
 
 

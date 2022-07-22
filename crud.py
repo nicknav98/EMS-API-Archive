@@ -1,3 +1,7 @@
+from datetime import timedelta, datetime
+from typing import Union
+
+from jose import jwt
 from sqlalchemy.orm import Session
 
 import models
@@ -9,6 +13,10 @@ def get_user(db: Session, user_id: int):
     return db.query(models.User).filter(models.User.id == user_id).first()
 
 
+def get_user_by_username(db: Session, username: str):
+    return db.query(models.User).filter(models.User.username == username).first()
+
+
 def get_user_by_email(db: Session, email: str):
     return db.query(models.User).filter(models.User.email == email).first()
 
@@ -18,7 +26,7 @@ def get_users(db: Session, skip: int = 0, limit: int = 100):
 
 
 def create_user(db: Session, user: schemas.UserCreate, password_hashed: schemas.UserDB):
-    db_user = models.User(email=user.email, password=password_hashed)
+    db_user = models.User(email=user.email, username=user.username, password=password_hashed)
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
@@ -83,9 +91,21 @@ def create_measurement(db: Session, measurement: schemas.MeasurementCreate):
 # ------------END OF Measurement
 # Functions----------------------------------------------------------------------------------------------------
 
-def create_access_token(db: Session, user_id: int, expires: float = 3600):
-    access_token = models.AccessToken(user_id=user_id)
-    db.add(access_token)
-    db.commit()
-    db.refresh(access_token)
-    return access_token
+def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=15)
+    to_encode.update({'exp': expire})
+    encoded_jwt = jwt.encode(to_encode, password.SECRET_KEY, algorithm=password.ALGORITHM)
+    return encoded_jwt
+
+
+def authenticate_user(db: Session, username: str, password: str):
+    user = get_user_by_email(db, username)
+    if not user:
+        return False
+    if not password.verify_password(password, user.password):
+        return False
+    return user

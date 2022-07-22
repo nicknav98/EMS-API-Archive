@@ -1,6 +1,6 @@
 from datetime import time, timedelta
-
-from fastapi import FastAPI, Depends, HTTPException
+from typing import Union
+from fastapi import FastAPI, Depends, HTTPException, status
 from jose import jwt, JWTError
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.exc import IntegrityError
@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 from typing import List
 
 models.Base.metadata.create_all(bind=engine)
-
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 app = FastAPI()
 
@@ -29,12 +29,34 @@ def get_db():
         db.close()
 
 
+async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"})
+    try:
+        payload = jwt.decode(token, "secret")
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+        token_data = schemas.TokenData(username=username)
+    except JWTError:
+        raise credentials_exception
+    user = crud.get_user_by_username(db, username=token_data.username)
+    if user is None:
+        raise credentials_exception
+    return user
+
+
 @app.post('/register', response_model=schemas.User)
-async def create_user(user: schemas.UserCreate, db: SessionLocal = Depends(get_db)):
+def create_user(user: schemas.UserCreate, db: SessionLocal = Depends(get_db)):
     hashed_password = password.get_password_hash(user.password)
     db_user = crud.get_user_by_email(db, email=user.email)
+    db_username = crud.get_user_by_username(db, username=user.username)
     if db_user:
         raise HTTPException(status_code=400, detail="User with this email already exists")
+    if db_username:
+        raise HTTPException(status_code=400, detail="User with this username already exists")
     return crud.create_user(db=db, user=user, password_hashed=hashed_password)
 
 
@@ -77,16 +99,23 @@ def read_measurements(skip: int = 0, limit: int = 100, db: Session = Depends(get
     return measurements
 
 
+async def get_current_active_user(current_user: models.User = Depends(get_current_user)):
+    if current_user.is_active is False:
+        raise HTTPException(status_code=400, detail="Inactive user")
+    return current_user
+
+
 @app.post("/token", response_model=schemas.Token)
-async def create_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = crud.get_user_by_email(db, email=form_data.username)
+async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    user = crud.get_user_by_username(db, username=form_data.username)
     if user is None:
-        raise HTTPException(status_code=400, detail="Incorrect username or password")
-    hashed_password = user.hashed_password
+        raise HTTPException(status_code=400,
+                            detail="Incorrect username or password",
+                            headers={"WWW-Authenticate": "Bearer"})
+    hashed_password = user.password
     if not password.verify_password(plain_password=form_data.password, hashed_password=hashed_password):
         raise HTTPException(status_code=400, detail="Incorrect username or password")
 
     access_token_expires = timedelta(minutes=30)
-    access_token_expires_in_int = access_token_expires.total_seconds()
-    access_token = crud.create_access_token(db, user_id=user.id, expires=access_token_expires_in_int)
-    return {"access_token": access_token, "token_type": "bearer"}
+    access_token = crud.create_access_token(data={"sub": user.username}, expires_delta=access_token_expires)
+    return {"token": access_token, "token_type": "bearer"}
