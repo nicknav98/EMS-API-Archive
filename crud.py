@@ -102,6 +102,11 @@ def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None
     return encoded_jwt
 
 
+def create_refresh_token(username: str):
+    return create_access_token({'username': username}, expires_delta=timedelta(days=7))
+
+
+
 def authenticate_user(db: Session, username: str, password: str):
     user = get_user_by_email(db, username)
     if not user:

@@ -15,7 +15,10 @@ from sqlalchemy.orm import Session
 from typing import List
 
 models.Base.metadata.create_all(bind=engine)
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl="/token",
+    scheme_name="JWT"
+)
 
 app = FastAPI()
 
@@ -88,6 +91,12 @@ def read_buildings(skip: int = 0, limit: int = 100, db: Session = Depends(get_db
     return buildings
 
 
+@app.get("/users/me/buildings", response_model=List[schemas.Building])
+def read_user_buildings(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+    user_building = crud.get_building_by_user(db, user_id=current_user.id)
+    return user_building
+
+
 @app.post("/measurements/", response_model=schemas.Measurement)
 def create_measurement(measurement: schemas.MeasurementCreate, db: Session = Depends(get_db)):
     return crud.create_measurement(db=db, measurement=measurement)
@@ -119,3 +128,20 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     access_token_expires = timedelta(minutes=30)
     access_token = crud.create_access_token(data={"sub": user.username}, expires_delta=access_token_expires)
     return {"token": access_token, "token_type": "bearer"}
+
+
+@app.get("/users/me", response_model=schemas.User)
+async def get_me(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    try:
+        payload = jwt.decode(token, password.SECRET_KEY, algorithms=[password.ALGORITHM])
+        token_data = schemas.TokenData(username=payload.get("sub"))
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Token is invalid", headers={"WWW-Authenticate": "Bearer"})
+    user = crud.get_user_by_username(db, username=token_data.username)
+    if user is None:
+        raise HTTPException(status_code=401, detail="User not found", headers={"WWW-Authenticate": "Bearer"})
+    return user
+
+
+
+
