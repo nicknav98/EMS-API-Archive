@@ -45,17 +45,17 @@ def get_building_by_name(db: Session, building_name: str):
     return db.query(models.Building).filter(models.Building.name == building_name).first()
 
 
-def get_building_by_user(db: Session, user_id: int):
-    return db.query(models.Building).filter(models.Building.user_id == user_id).first()
+def get_building_by_user(db: Session, username: str, skip: int = 0, limit: int = 100):
+    return db.query(models.Building).filter(models.Building.username == username).offset(skip).limit(limit).all()
 
 
 def get_buildings(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.Building).offset(skip).limit(limit).all()
 
 
-def create_user_building(db: Session, user_id: int, building: schemas.BuildingCreate):
+def create_user_building(db: Session, username: str, building: schemas.BuildingCreate):
     db_building = models.Building(name=building.name, location=building.location,
-                                  is_pv_installed=building.is_pv_installed, user_id=user_id)
+                                  is_pv_installed=building.is_pv_installed, username=username)
     db.add(db_building)
     db.commit()
     db.refresh(db_building)
@@ -106,11 +106,10 @@ def create_refresh_token(username: str):
     return create_access_token({'username': username}, expires_delta=timedelta(days=7))
 
 
-
-def authenticate_user(db: Session, username: str, password: str):
-    user = get_user_by_email(db, username)
+def authenticate_user(db: Session, username: str, user_password: str):
+    user = get_user_by_username(db, username)
     if not user:
         return False
-    if not password.verify_password(password, user.password):
+    if not password.verify_password(user_password, user.password):
         return False
     return user

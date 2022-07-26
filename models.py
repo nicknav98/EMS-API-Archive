@@ -11,7 +11,7 @@ class Building(Base):
     name = Column(String(120), unique=True, index=True)
     location = Column(String(120))
     is_pv_installed = Column(Boolean, default=False)
-    user_id = Column(Integer, ForeignKey('users.id'))
+    username = Column(String, ForeignKey('users.username'))
 
     measurements = relationship("Measurement", back_populates="building")
     owner = relationship("User", back_populates="buildings")

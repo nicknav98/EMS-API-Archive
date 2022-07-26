@@ -37,7 +37,7 @@ class BuildingCreate(BuildingBase):
 
 class Building(BuildingBase):
     id: int
-    user_id = int
+    username = str
 
     measurements: List[MeasurementBase]
 
