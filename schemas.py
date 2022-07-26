@@ -1,5 +1,6 @@
 from typing import List, Union
 from pydantic import BaseModel
+import pandas as pd
 
 
 class MeasurementBase(BaseModel):
@@ -84,3 +85,7 @@ class TokenData(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+
+

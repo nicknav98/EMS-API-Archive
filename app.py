@@ -1,6 +1,6 @@
 from datetime import time, timedelta
 from typing import Union
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File
 from jose import jwt, JWTError
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.exc import IntegrityError
@@ -9,6 +9,7 @@ import crud
 import models
 import schemas
 import password
+import fileHandling
 import authentication
 from database import SessionLocal, engine
 from sqlalchemy.orm import Session
@@ -139,6 +140,14 @@ async def get_me(token: str = Depends(oauth2_scheme), db: Session = Depends(get_
         raise HTTPException(status_code=401, detail="User not found", headers={"WWW-Authenticate": "Bearer"})
     return user
 
+
+@app.post("/users/files/measurements/")
+async def file_to_database(file: UploadFile = File(...), current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+    if file.content_type != "text/csv":
+        raise HTTPException(status_code=400, detail="File is not csv")
+    fileHandling.file_to_database(file)
+
+    return {"message": "File uploaded"}
 
 
 
