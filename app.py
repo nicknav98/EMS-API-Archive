@@ -149,5 +149,7 @@ async def file_to_database(file: UploadFile = File(...), current_user: models.Us
 
     return {"message": "File uploaded"}
 
-
-
+@app.get("/building-measurements/")
+async def get_building_measurements(building_name: str, db: Session = Depends(get_db)):
+    measurements = crud.get_measurement_by_building(db, building_name=building_name)
+    return measurements
