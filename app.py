@@ -4,7 +4,6 @@ from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File
 from jose import jwt, JWTError
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.exc import IntegrityError
-from fastapi_mqtt import FastMQTT, MQTTConfig
 
 import crud
 import models
@@ -26,23 +25,6 @@ oauth2_scheme = OAuth2PasswordBearer(
 
 
 app = FastAPI()
-
-mqtt_config = MQTTConfig(host="172.24.59.99",
-                         port=1883,
-                         keepalive=60,
-                         username="",
-                         password="",)
-
-mqtt = FastMQTT(
-
-    config=mqtt_config
-)
-
-
-
-
-
-mqtt.init_app(app)
 
 
 # Dependency
@@ -178,22 +160,3 @@ async def get_building_measurements(building_name: str, db: Session = Depends(ge
     return measurements
 
 
-@mqtt.on_connect()
-def connect_handler(client, userdata, flags, rc):
-    client.subscribe("extapi/data/ehub")
-    print("Connected to MQTT with result code ", client, userdata, flags, rc)
-
-
-@mqtt.on_message()
-async def message(client, topic, payload, qos, properties):
-    print("Message received: ", topic, payload, qos, properties)
-
-
-@mqtt.on_disconnect()
-def disconnect_handler(client, packet, exc=None):
-    print("Disconnected from MQTT with reason code ", client, packet, exc)
-
-
-@mqtt.on_subscribe()
-def subscribed_handler(client, userdata, mid, granted_qos):
-    print("Subscribed with result code ", client, userdata, mid, granted_qos)
